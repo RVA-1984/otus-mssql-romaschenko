@@ -24,13 +24,12 @@ USE WideWorldImporters
 Таблицы: Warehouse.StockItems.
 */
 
-Select StockItemID,StockItemName
+Select StockItemID as 'Ид.товара'
+,StockItemName as 'наименование товара'
 From Warehouse.StockItems
-Where StockItemName Like 'Animal%';  
+Where StockItemName Like 'Animal%' OR StockItemName Like '%urgent%';  
 
-Select StockItemID,StockItemName
-From Warehouse.StockItems
-Where StockItemName Like '%urgent%';
+
 /*
 2. Поставщиков (Suppliers), у которых не было сделано ни одного заказа (PurchaseOrders).
 Сделать через JOIN, с подзапросом задание принято не будет.
@@ -68,18 +67,57 @@ ORDER BY s.SupplierID;
 Таблицы: Sales.Orders, Sales.OrderLines, Sales.Customers.
 */
 select
-s.UnitPrice,
-s.Quantity,
-o.OrderID,
-c.CustomerName,
-FORMAT (OrderDate,'dd.MM.yyyy') AS OrderDate, 
-DATENAME (month,o.PickingCompletedWhen) AS PickingCompletedWhen,
-DATEPART (quarter,o.PickingCompletedWhen) AS NumberQuarter
-FROM Sales.Orders o
-JOIN Sales.OrderLines s ON s.UnitPrice>100 AND Quantity>20
-JOIN Sales.Customers c ON c.CustomerName=c.CustomerName
-Order by NumberQuarter, OrderDate ASC
-OFFSET 1000 ROWS FETCH FIRST 100 ROWS ONLY
+o.OrderID 'Ид.заказа'
+,convert(varchar, o.OrderDate, 104) as 'Дата заказа'
+,datename(M, o.OrderDate) as 'Название месяца'            
+,datepart(Q, o.OrderDate) as 'Номер квартала' 
+,case
+when datepart(M, o.OrderDate) in (1,2,3,4) then 1
+when datepart(M, o.OrderDate) in (5,6,7,8) then 2
+else 3
+end  as 'Треть года'
+,c.CustomerName as 'Имя заказчика'
+from sales.Orders as o
+	join sales.OrderLines s on o.OrderID = s.OrderID
+	left join sales.Customers c on o.CustomerID = c.CustomerID
+where (s.UnitPrice > 100 or s.Quantity > 20)
+	and s.PickingCompletedWhen is not null
+order by 
+	datepart(Q, o.OrderDate),
+	case
+		when datepart(M, o.OrderDate) in (1,2,3,4) then 1
+		when datepart(M, o.OrderDate) in (5,6,7,8) then 2
+		else 3
+	end,
+	convert(varchar, o.OrderDate, 104) 
+
+	---пропускаем первую 1000 и отображаем следующие 100 записей
+	select
+o.OrderID 'Ид.заказа'
+,convert(varchar, o.OrderDate, 104) as 'Дата заказа'
+,datename(M, o.OrderDate) as 'Название месяца'            
+,datepart(Q, o.OrderDate) as 'Номер квартала' 
+,case
+when datepart(M, o.OrderDate) in (1,2,3,4) then 1
+when datepart(M, o.OrderDate) in (5,6,7,8) then 2
+else 3
+end  as 'Треть года'
+,c.CustomerName as 'Имя заказчика'
+from sales.Orders as o
+	join sales.OrderLines s on o.OrderID = s.OrderID
+	left join sales.Customers c on o.CustomerID = c.CustomerID
+where (s.UnitPrice > 100 or s.Quantity > 20)
+	and s.PickingCompletedWhen is not null
+order by 
+	datepart(Q, o.OrderDate),
+	case
+		when datepart(M, o.OrderDate) in (1,2,3,4) then 1
+		when datepart(M, o.OrderDate) in (5,6,7,8) then 2
+		else 3
+	end,
+	convert(varchar, o.OrderDate, 104)
+	offset 1000 rows fetch first 100 rows only
+
 /*
 4. Заказы поставщикам (Purchasing.Suppliers),
 которые должны быть исполнены (ExpectedDeliveryDate) в январе 2013 года
@@ -93,16 +131,19 @@ OFFSET 1000 ROWS FETCH FIRST 100 ROWS ONLY
 
 Таблицы: Purchasing.Suppliers, Purchasing.PurchaseOrders, Application.DeliveryMethods, Application.People.
 */
-Select 
-d.DeliveryMethodName,
-p.ExpectedDeliveryDate,
-s.SupplierName,
-p.ContactPersonID,
-p.IsOrderFinalized
-FROM Purchasing.Suppliers s
-JOIN Application.DeliveryMethods d ON d.DeliveryMethodName = 'Air Freight' OR d.DeliveryMethodName = 'Refrigerated Air Freight'
-JOIN Purchasing.PurchaseOrders p ON p.ExpectedDeliveryDate BETWEEN '2013-01-01' AND '2013-01-31'
 
+	 select
+	 ad.DeliveryMethodName      as 'Cпособ доставки'
+	,ppo.ExpectedDeliveryDate   as 'Дата доставки'
+	,ps.SupplierName            as 'Имя поставщика'
+	,ap.FullName                as 'Имя контактного лица, принимавшего заказ'
+from Purchasing.Suppliers as ps
+	join Purchasing.PurchaseOrders     as ppo on ps.SupplierID = ppo.SupplierID
+	join Application.DeliveryMethods   as ad on ppo.DeliveryMethodID = ad.DeliveryMethodID
+	join Application.People            as ap on ppo.ContactPersonID = ap.PersonID
+where ppo.ExpectedDeliveryDate like '2013-01%'
+	and (ad.DeliveryMethodName like 'Air Freight' or ad.DeliveryMethodName like 'Refrigerated Air Freight')
+	and ppo.IsOrderFinalized = 1
 
 
 /*
@@ -111,14 +152,11 @@ JOIN Purchasing.PurchaseOrders p ON p.ExpectedDeliveryDate BETWEEN '2013-01-01' 
 Сделать без подзапросов.
 */
 
-Select top 10
-t.TransactionDate,
-c.CustomerName,
-i.SalespersonPersonID
-FROM Sales.CustomerTransactions t
-JOIN Sales.Customers c ON c.CustomerName = c.CustomerName
-JOIN Sales.Invoices i ON i.SalespersonPersonID = i.SalespersonPersonID
-
+select top 10 c.CustomerName, p.FullName, i.*
+from sales.Invoices as i
+join Sales.Customers as c on i.CustomerID = c.CustomerID
+join Application.People as p on i.SalespersonPersonID = p.PersonID
+order by InvoiceDate desc, InvoiceID desc
 /*
 6. Все ид и имена клиентов и их контактные телефоны,
 которые покупали товар "Chocolate frogs 250g".
@@ -126,15 +164,16 @@ JOIN Sales.Invoices i ON i.SalespersonPersonID = i.SalespersonPersonID
 */
 
 SELECT
-     c.CustomerID,
-	 c.CustomerName,
-	 c.PhoneNumber,
-	 s.StockItemName 
-FROM Sales.Customers c 
-JOIN Warehouse.StockItems s ON s.StockItemName = 'Chocolate frogs 250g';
+     st.CustomerID as 'Ид клиента',
+	 c.CustomerName 'Имя клиента',
+	 c.PhoneNumber as 'Контактный телефон'
+FROM Warehouse.StockItemTransactions as st 
+JOIN Warehouse.StockItems as s ON st.StockItemID = s.StockItemID
+JOIN sales.Customers as c on st.CustomerID = c.CustomerID
+where s.StockItemName like 'Chocolate frogs 250g'
+
 
 
  
-
 
 
