@@ -1,4 +1,4 @@
-/*
+	/*
 Домашнее задание по курсу MS SQL Server Developer в OTUS.
 Занятие "03 - Подзапросы, CTE, временные таблицы".
 Задания выполняются с использованием базы данных WideWorldImporters.
@@ -26,14 +26,10 @@ USE WideWorldImporters
 Продажи смотреть в таблице Sales.Invoices.
 */
 
-SELECT P.PersonID, P.FullName
-FROM [Application].People AS P
-	JOIN
-	(SELECT SalespersonPersonID, Count(InvoiceId) AS SalesCount
-	FROM Sales.Invoices
-	WHERE InvoiceDate = '2015-07-04'
-	GROUP BY SalespersonPersonID) AS I
-		ON P.PersonID = I.SalespersonPersonID
+select * from application.people
+where IsSalesperson = 1
+	and PersonID not in (select SalespersonPersonID from Sales.Invoices 
+					where invoiceDate like '2015-07-04');
 
 SELECT P.PersonID, P.FullName
 FROM [Application].People AS P
@@ -68,25 +64,17 @@ WHERE UnitPrice = (SELECT min(UnitPrice) FROM Warehouse.StockItems);
 из Sales.CustomerTransactions. 
 Представьте несколько способов (в том числе с CTE). 
 */
-SELECT top 5
-	p.PersonId, 
-	p.FullName, 
-	MAX (TransactionAmount) as TransactionAmount
-FROM Application.People p
-JOIN Sales.CustomerTransactions c ON c.CustomerTransactionID = p.PersonID
-GROUP BY p.PersonID, p.FullName
-order by TransactionAmount desc
+select * from Sales.Customers as SC
+join (select top 5 transactionamount, customerID from Sales.CustomerTransactions
+		order by transactionamount desc) as SCT on SC.CustomerID = SCT.CustomerID;
 
-select 
-CustomerTransactionID,
-CustomerID,
-TransactionAmount
-from Sales.CustomerTransactions
-where CustomerTransactionID in (
-select top 5
-CustomerTransactionID
-from Sales.CustomerTransactions
-order by TransactionAmount desc)
+with CTE as
+(
+select top 5 transactionamount, customerID from Sales.CustomerTransactions
+order by transactionamount desc
+)
+select * from Sales.Customers as SC
+join CTE on SC.CustomerID = CTE.CustomerID;
 
 /*
 4. Выберите города (ид и название), в которые были доставлены товары, 
@@ -106,9 +94,8 @@ JOIN Sales.Orderlines stock ON stock.OrderID = Invoice.OrderID
 JOIN (
 select top 3
 StockItemID,
-SUM (UnitPrice) AS UnitPrice
+UnitPrice AS UnitPrice
 FROM Warehouse.StockItems
-GROUP BY StockItemID
 ORDER BY UnitPrice desc) price ON price.StockItemID = stock.StockItemID
 
 --сte и подзапрос
@@ -129,9 +116,8 @@ FullName
 from cte
 WHERE StockItemID in (
 select StockItemID
-FROM (select top 3 StockItemID, SUM (UnitPrice) AS UnitPrice from Warehouse.StockItems
-GROUP BY StockItemID
-ORDER BY UnitPrice desc) c)
+FROM (select top 3 UnitPrice, StockItemID from Warehouse.StockItems
+ORDER BY UnitPrice desc) as c)
 ORDER BY FullName asc
 
 -- ---------------------------------------------------------------------------
