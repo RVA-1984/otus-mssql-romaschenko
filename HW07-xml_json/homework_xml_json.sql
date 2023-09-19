@@ -62,7 +62,8 @@ CREATE TABLE #StockItems (
 	[LeadTimeDays] INT,
 	[IsChillerStock] BIT,
 	[TaxRate] DECIMAL(9,2),
-	[UnitPrice] DECIMAL(9,2)
+	[UnitPrice] DECIMAL(9,2),
+	[LastEditedBy] INT
 );
 
 INSERT INTO #StockItems
@@ -78,7 +79,8 @@ WITH (
 	[LeadTimeDays] INT 'LeadTimeDays',
 	[IsChillerStock] BIT 'IsChillerStock',
 	[TaxRate] DECIMAL(9,2) 'TaxRate',
-	[UnitPrice] DECIMAL(9,2) 'UnitPrice');
+	[UnitPrice] DECIMAL(9,2) 'UnitPrice',
+	[LastEditedBy] INT 'LastEditedBy');
 
 	/* копируем таблицу Warehouse.StockItems, чтоб в нее вставить/обновить записи.
 	drop table if exists ##WSI
@@ -93,6 +95,7 @@ WITH (
 		IsChillerStock,
 		TaxRate,
 		UnitPrice
+		LastEditedBy
 	into ##WSI
 	from Warehouse.StockItems
 */
@@ -109,7 +112,8 @@ WITH (
 							WSI.TypicalWeightPerUnit	=SI.TypicalWeightPerUnit,	
 							WSI.LeadTimeDays			=SI.LeadTimeDays,	
 							WSI.IsChillerStock			=SI.IsChillerStock,
-							WSI.TaxRate					=SI.TaxRate				
+							WSI.TaxRate					=SI.TaxRate,
+							WSI.LastEditedBy            =SI.LastEditedBy
 		
 	WHEN NOT MATCHED THEN INSERT VALUES(
 							SI.StockItemName,
@@ -121,7 +125,8 @@ WITH (
 							SI.LeadTimeDays,
 							SI.IsChillerStock,
 							SI.TaxRate,
-							SI.UnitPrice)
+							SI.UnitPrice,
+							SI.LastEditedBy)
 	OUTPUT $action, inserted.*;
 */
 
@@ -140,7 +145,8 @@ select
 	t.Item.value('(LeadTimeDays)[1]', 'int')							as LeadTimeDays,
 	t.Item.value('(IsChillerStock)[1]', 'int')							as IsChillerStock,
 	t.Item.value('(TaxRate)[1]', 'decimal(9,2)')						as TaxRate,
-	t.Item.value('(UnitPrice)[1]', 'decimal(9,2)')						as UnitPrice
+	t.Item.value('(UnitPrice)[1]', 'decimal(9,2)')						as UnitPrice,
+	t.Item.value('(LastEditedBy)[1]', 'int')                            as LastEditedBy
 from @xml.nodes('/StockItems/Item') as t(Item);
 
 /*
