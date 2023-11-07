@@ -82,7 +82,7 @@ WITH (
 	[UnitPrice] DECIMAL(9,2) 'UnitPrice',
 	[LastEditedBy] INT 'LastEditedBy');
 
-	/* копируем таблицу Warehouse.StockItems, чтоб в нее вставить/обновить записи.
+	--копируем таблицу Warehouse.StockItems, чтоб в нее вставить/обновить записи.
 	drop table if exists ##WSI
 	select
 		StockItemName,
@@ -98,9 +98,9 @@ WITH (
 		LastEditedBy
 	into ##WSI
 	from Warehouse.StockItems
-*/
 
-/* Вставляем/обновляем записи
+
+--Вставляем/обновляем записи
 	MERGE ##WSI AS WSI
 	USING ##StockItems AS SI
 	ON (WSI.StockItemName = SI.StockItemName COLLATE database_default)
@@ -128,7 +128,7 @@ WITH (
 							SI.UnitPrice,
 							SI.LastEditedBy)
 	OUTPUT $action, inserted.*;
-*/
+
 
 -- вариант XQuery
 
