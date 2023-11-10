@@ -44,109 +44,107 @@ USE WideWorldImporters;
 Declare @xmlfile XML
 
 Select @xmlfile = bulkcolumn
-from openrowset (bulk 'C:\Users\user\Desktop\otus_mssql_2023\HW07-xml_json\StockItems.xml', single_clob) as data
+from openrowset (bulk 'C:\Users\user\Desktop\HW\StockItems.xml', single_clob) as data
 
-DECLARE @docHandle INT
-EXEC sp_xml_preparedocument @docHandle OUTPUT,  @xmlfile
-
--- вставка результата во временную таблицу 
-	DROP TABLE IF EXISTS #StockItems;
-
-CREATE TABLE #StockItems (
-	[StockItemName] NVARCHAR (200),
-	[SupplierID] INT,
-	[UnitPackageID] INT,
-	[OuterPackageID] INT,
-	[QuantityPerOuter] INT,
-	[TypicalWeightPerUnit] DECIMAL(9,2),
-	[LeadTimeDays] INT,
-	[IsChillerStock] BIT,
-	[TaxRate] DECIMAL(9,2),
-	[UnitPrice] DECIMAL(9,2),
-	[LastEditedBy] INT
-);
-
-INSERT INTO #StockItems
-SELECT *
-FROM OPENXML(@docHandle, N'/StockItems/Item')
-WITH ( 
-	[StockItemName] NVARCHAR (200) '@Name',
-	[SupplierID] INT 'SupplierID',
-	[UnitPackageID] INT 'Package/UnitPackageID',
-	[OuterPackageID] INT 'Package/OuterPackageID',
-	[QuantityPerOuter] INT 'Package/QuantityPerOuter',
-	[TypicalWeightPerUnit] DECIMAL(9,2) 'Package/TypicalWeightPerUnit',
-	[LeadTimeDays] INT 'LeadTimeDays',
-	[IsChillerStock] BIT 'IsChillerStock',
-	[TaxRate] DECIMAL(9,2) 'TaxRate',
-	[UnitPrice] DECIMAL(9,2) 'UnitPrice',
-	[LastEditedBy] INT 'LastEditedBy');
-
-	--копируем таблицу Warehouse.StockItems, чтоб в нее вставить/обновить записи.
-	drop table if exists ##WSI
-	select
-		StockItemName,
-		SupplierID,
-		UnitPackageID,
-		OuterPackageID,
-		QuantityPerOuter,
-		TypicalWeightPerUnit,
-		LeadTimeDays,
-		IsChillerStock,
-		TaxRate,
-		UnitPrice
-		LastEditedBy
-	into ##WSI
-	from Warehouse.StockItems
+Declare @docHandle int
+exec sp_xml_preparedocument @docHandle output, @xmlfile
 
 
---Вставляем/обновляем записи
-	MERGE ##WSI AS WSI
-	USING ##StockItems AS SI
-	ON (WSI.StockItemName = SI.StockItemName COLLATE database_default)
-	WHEN MATCHED THEN UPDATE SET 
-							WSI.SupplierID				=SI.SupplierID,
-							WSI.UnitPackageID			=SI.UnitPackageID,
-							WSI.OuterPackageID			=SI.OuterPackageID,
-							WSI.QuantityPerOuter		=SI.QuantityPerOuter,	
-							WSI.TypicalWeightPerUnit	=SI.TypicalWeightPerUnit,	
-							WSI.LeadTimeDays			=SI.LeadTimeDays,	
-							WSI.IsChillerStock			=SI.IsChillerStock,
-							WSI.TaxRate					=SI.TaxRate,
-							WSI.LastEditedBy            =SI.LastEditedBy
-		
-	WHEN NOT MATCHED THEN INSERT VALUES(
-							SI.StockItemName,
-							SI.SupplierID,
-							SI.UnitPackageID,
-							SI.OuterPackageID,
-							SI.QuantityPerOuter,
-							SI.TypicalWeightPerUnit,
-							SI.LeadTimeDays,
-							SI.IsChillerStock,
-							SI.TaxRate,
-							SI.UnitPrice,
-							SI.LastEditedBy)
-	OUTPUT $action, inserted.*;
+ -- создаем времянку для хранения
+
+        drop table if exists ##StockItems
+
+        create table ##StockItems(
+                [StockItemName] nvarchar(200),        
+                [SupplierID] int ,        
+                [UnitPackageID] int ,        
+                [OuterPackageID] int ,        
+                [QuantityPerOuter] int ,        
+                [TypicalWeightPerUnit] decimal(9,2),        
+                [LeadTimeDays] int ,        
+                [IsChillerStock] int ,        
+                [TaxRate] decimal(9,2),        
+                [UnitPrice] decimal(9,2));  
+
+    insert into ##StockItems
+        Select * 
+        from openxml (@docHandle, N'/StockItems/Item')
+        with (
+                [StockItemName] nvarchar(200) '@Name',
+                [SupplierID] int 'SupplierID',
+                [UnitPackageID] int 'Package/UnitPackageID',
+                [OuterPackageID] int 'Package/OuterPackageID',
+                [QuantityPerOuter] int 'Package/QuantityPerOuter',
+                [TypicalWeightPerUnit] decimal(9,2) 'Package/TypicalWeightPerUnit',
+                [LeadTimeDays] int 'LeadTimeDays',
+                [IsChillerStock] int 'IsChillerStock',
+                [TaxRate] decimal(9,2) 'TaxRate',
+                [UnitPrice] decimal(9,2) 'UnitPrice');
 
 
--- вариант XQuery
+-- копирую табличку Warehouse.StockItems, чтоб в нее вставить/обновить записи.
 
+        drop table if exists ##WSI
+
+        select
+                StockItemName,
+                SupplierID,
+                UnitPackageID,
+                OuterPackageID,
+                QuantityPerOuter,
+                TypicalWeightPerUnit,
+                LeadTimeDays,
+                IsChillerStock,
+                TaxRate,
+                UnitPrice
+        into ##WSI
+        from Warehouse.StockItems
+
+
+ -- Вставляем/обновляем записи
+
+        MERGE ##WSI AS WSI
+        USING ##StockItems AS SI
+        ON (WSI.StockItemName = SI.StockItemName COLLATE database_default)
+        WHEN MATCHED THEN UPDATE SET 
+                                                        WSI.SupplierID =SI.SupplierID,
+                                                        WSI.UnitPackageID =SI.UnitPackageID,
+                                                        WSI.OuterPackageID =SI.OuterPackageID,
+                                                        WSI.QuantityPerOuter =SI.QuantityPerOuter,        
+                                                        WSI.TypicalWeightPerUnit =SI.TypicalWeightPerUnit,        
+                                                        WSI.LeadTimeDays =SI.LeadTimeDays,        
+                                                        WSI.IsChillerStock =SI.IsChillerStock,
+                                                        WSI.TaxRate =SI.TaxRate                                
+
+        WHEN NOT MATCHED THEN INSERT VALUES(
+                                                        SI.StockItemName,
+                                                        SI.SupplierID,
+                                                        SI.UnitPackageID,
+                                                        SI.OuterPackageID,
+                                                        SI.QuantityPerOuter,
+                                                        SI.TypicalWeightPerUnit,
+                                                        SI.LeadTimeDays,
+                                                        SI.IsChillerStock,
+                                                        SI.TaxRate,
+                                                        SI.UnitPrice)
+        OUTPUT $action, inserted.*;
+
+
+-- XQuery
 Declare @xml XML;
-Set @xml = (select * from openrowset (bulk 'C:\Users\user\Desktop\otus_mssql_2023\HW07-xml_json\StockItems.xml', single_clob) as d)
+Set @xml = (select * from openrowset (bulk 'C:\Users\user\Desktop\HW\StockItems.xml', single_clob) as d)
 
 select 
-	t.Item.value('(@Name)[1]', 'nvarchar(200)')							as StockItemName,
-	t.Item.value('(SupplierID)[1]',	'int')								as SupplierID,
-	t.Item.value('(Package/UnitPackageID)[1]', 'int')					as UnitPackageID,
-	t.Item.value('(Package/OuterPackageID)[1]',	'int')					as OuterPackageID,
-	t.Item.value('(Package/QuantityPerOuter)[1]', 'int')				as QuantityPerOuter,
-	t.Item.value('(Package/TypicalWeightPerUnit)[1]', 'decimal(9,2)')	as TypicalWeightPerUnit,
-	t.Item.value('(LeadTimeDays)[1]', 'int')							as LeadTimeDays,
-	t.Item.value('(IsChillerStock)[1]', 'int')							as IsChillerStock,
-	t.Item.value('(TaxRate)[1]', 'decimal(9,2)')						as TaxRate,
-	t.Item.value('(UnitPrice)[1]', 'decimal(9,2)')						as UnitPrice,
-	t.Item.value('(LastEditedBy)[1]', 'int')                            as LastEditedBy
+        t.Item.value('(@Name)[1]', 'nvarchar(200)') as StockItemName,
+        t.Item.value('(SupplierID)[1]', 'int') as SupplierID,
+        t.Item.value('(Package/UnitPackageID)[1]', 'int') as UnitPackageID,
+        t.Item.value('(Package/OuterPackageID)[1]', 'int') as OuterPackageID,
+        t.Item.value('(Package/QuantityPerOuter)[1]', 'int') as QuantityPerOuter,
+        t.Item.value('(Package/TypicalWeightPerUnit)[1]', 'decimal(9,2)') as TypicalWeightPerUnit,
+        t.Item.value('(LeadTimeDays)[1]', 'int') as LeadTimeDays,
+        t.Item.value('(IsChillerStock)[1]', 'int') as IsChillerStock,
+        t.Item.value('(TaxRate)[1]', 'decimal(9,2)') as TaxRate,
+        t.Item.value('(UnitPrice)[1]', 'decimal(9,2)') as UnitPrice
 from @xml.nodes('/StockItems/Item') as t(Item);
 
 /*
