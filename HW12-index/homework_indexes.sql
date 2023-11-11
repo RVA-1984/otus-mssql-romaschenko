@@ -10,32 +10,30 @@
 
 --Создание таблицы для индексов
  
- DROP TABLE IF EXISTS dbo.Index_loan_portfolio
+ DROP TABLE IF EXISTS dbo.Index_loan_portfolio1
 
  SELECT 
  id_agreement,
  id_client,
- client_name,
  date_from,
  date_to,
  amount_agreement
- INTO dbo.Index_loan_portfolio
+ INTO dbo.Index_loan_portfolio1
  FROM dbo.loan_portfolio
  GO
 
  --Создание Column Store индекс в Index_loan_portfolio
-CREATE COLUMNSTORE INDEX Index_loan_portfolio
-ON dbo.Index_loan_portfolio (id_agreement);
+CREATE COLUMNSTORE INDEX Index_loan_portfolio1
+ON dbo.Index_loan_portfolio1 (id_agreement);
 GO
 
 SELECT 
 id_agreement,
  id_client,
- client_name,
  date_from,
  date_to,
  amount_agreement
- FROM dbo.Index_loan_portfolio OPTION(MAXDOP 1);
+ FROM dbo.Index_loan_portfolio1 OPTION(MAXDOP 1);
  GO
 
  --Cоставные индексы (Composite indexes)
@@ -76,44 +74,31 @@ ON [loan_portfolio]
 (
 	[Id_agreement] ASC
 )
-INCLUDE(client_name);
+INCLUDE(id_client);
 GO
 
 -- Фильтрованные индексы (Filtered index)
 USE credit_portfolio;
 
 CREATE TABLE #product (
-id_agreement int not null,
 product_id int not null,
 product_name varchar (100) not null);
 
 INSERT INTO #product VALUES
-(245,7565,'Ипотека_вторичка'),
-(352,7565,'Ипотека_вторичка'),
-(485,444,'Потребительский_без залога'),
-(675,444,'Потребительский_без залога'),
-(985,2785,'Ипотека_первичка'),
-(1020,2785,'Ипотека_первичка'),
-(2152,2785,'Ипотека_первичка'),
-(8755,458,'Кредитная карта_много плюсов'),
-(348556,444,'Потребительский_без залога'),
-(4523687,7565,'Ипотека_вторичка'),
-(2587657,990,'Кредитование_МБ'),
-(75,990,'Кредитование_МБ'),
-(478965,145,'Кредитование_ИП'),
-(347856,12,'Корпоративное кредитование'),
-(9745634,12,'Корпоративное кредитование'),
-(54769856,458,'Кредитная карта_много плюсов'),
-(9533542,75,'Кредитование_СБ'),
-(54884222,444,'Потребительский_без залога'),
-(2145752125,7565,'Ипотека_вторичка'),
-(324522151,2785,'Ипотека_первичка')
+(7565,'Ипотека_вторичка'),
+(444,'Потребительский_без залога'),
+(2785,'Ипотека_первичка'),
+(458,'Кредитная карта_много плюсов'),
+(990,'Кредитование_МБ'),
+(145,'Кредитование_ИП'),
+(12,'Корпоративное кредитование'),
+(75,'Кредитование_СБ')
 
 CREATE UNIQUE NONCLUSTERED INDEX InX_product
-ON #product (id_agreement,product_id, product_name)
-WHERE(id_agreement is not null);
+ON #product (product_id, product_name)
+WHERE(product_id is not null);
 
-SELECT id_agreement,product_id, product_name FROM #product
+SELECT product_id, product_name FROM #product
 
 
 
