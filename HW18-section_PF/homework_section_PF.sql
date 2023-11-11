@@ -1,20 +1,19 @@
 USE credit_portfolio;
 --создаем функцию партиционирования по годам 
-CREATE PARTITION FUNCTION [fnYearPartition](DATE) AS RANGE RIGHT FOR VALUES
+CREATE PARTITION FUNCTION [fnYearPartition1](DATE) AS RANGE RIGHT FOR VALUES
 ('2013-01-01','2014-01-01','2015-01-01','2016-01-01', '2017-01-01',
  '2018-01-01', '2019-01-01', '2020-01-01', '2021-01-01','2022-01-01', '2023-01-01');																																																									
 GO
 
 -- партиционируем, используя созданную нами функцию
-CREATE PARTITION SCHEME [YearPartition] AS PARTITION [fnYearPartition] 
+CREATE PARTITION SCHEME [YearPartition1] AS PARTITION [fnYearPartition1] 
 ALL TO ([PRIMARY])
 GO
 
 --Создание клона таблицы loan_portfolio для партиционирования. Таблица будет называться loan_portfolio1
-CREATE TABLE [dbo].[loan_portfolio1](
+CREATE TABLE [dbo].[loan_portfolio2](
 [id_agreement] [int] not null,
 [id_client] [int] not null,
-[client_name] [varchar] (100) not null,
 [date_from] [date] not null,
 [date_to] [date] not null,
 [date_change] [date] not null,
@@ -30,7 +29,7 @@ CREATE TABLE [dbo].[loan_portfolio1](
 ) ON [YearPartition]([date_from])--в схеме [YearPartition] по ключу [date_from]
 
 --создаем наши секционированные таблицы
-SELECT * INTO section_table
+SELECT * INTO section_table1
 FROM loan_portfolio;
 
 
