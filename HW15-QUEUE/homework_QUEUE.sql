@@ -7,7 +7,6 @@ GO
 CREATE PROCEDURE Amount_agreement 
      @id_agreement INT,
      @id_client INT,
-	 @client_name VARCHAR (50),
 	 @amount_agreement DECIMAL (18,2)
 	
     
@@ -15,13 +14,13 @@ AS
     SET NOCOUNT ON;
     SELECT LP.id_agreement AS agreement, LP.id_client AS client, LP.client_name AS 'Name_client', amount_agreement AS 'amount_agreement'
     FROM dbo.loan_portfolio AS LP
-    JOIN dbo.loan_agreement AS LA
+    JOIN dbo.loan_agreements AS LA
       ON LA.id_agreement = LP.id_agreement
     WHERE LP.id_agreement LIKE  @id_agreement;
 -- Populate the output variable @amount_agreement.
 SET @amount_agreement = (SELECT SUM(amount_agreement)
     FROM dbo.loan_portfolio AS LP
-    JOIN dbo.loan_agreement AS LA
+    JOIN dbo.loan_agreements AS LA
       ON LA.id_agreement = LP.id_agreement
     WHERE LP.id_agreement LIKE  @id_agreement);
 SET @id_agreement = @amount_agreement;
