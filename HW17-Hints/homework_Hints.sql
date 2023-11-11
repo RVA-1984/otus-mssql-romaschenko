@@ -6,17 +6,17 @@
 
 
 select * from dbo.loan_portfolio as lp
-select * from dbo.client as cl
+select * from dbo.clients as cl
 
 --Запрос до оптимизации:
 SET STATISTICS io, time on;
 
-SELECT lp.id_agreement, lp.id_client, lp.client_name, SUM(lp.amount_agreement) AS clientwhichgetcredit, cl.id_client AS clientfrombase
+SELECT lp.id_agreement, lp.id_client, SUM(lp.amount_agreement) AS clientwhichgetcredit, cl.id_client AS clientfrombase
 FROM dbo.loan_portfolio as lp
-JOIN dbo.client as cl
+JOIN dbo.clients as cl
 ON lp.id_client = cl.id_client
 WHERE cl.id_client = 111
-GROUP BY lp.id_agreement, lp.id_client, lp.client_name,cl.id_client
+GROUP BY lp.id_agreement, lp.id_client, cl.id_client
 
 
 --Оптимизируем конкретно запрос по условию: id_client = 111
@@ -25,22 +25,25 @@ SET STATISTICS io, time on;
 
 DECLARE @id_client INT = 111;
 
-SELECT lp.id_agreement, lp.id_client, lp.client_name, SUM(lp.amount_agreement) AS clientwhichgetcredit, cl.id_client AS clientfrombase
+SELECT lp.id_agreement, lp.id_client, SUM(lp.amount_agreement) AS clientwhichgetcredit, cl.id_client AS clientfrombase
 FROM dbo.loan_portfolio as lp
-JOIN dbo.client as cl
+JOIN dbo.clients as cl
 ON lp.id_client = cl.id_client
 WHERE cl.id_client = @id_client 
-GROUP BY lp.id_agreement, lp.id_client, lp.client_name,cl.id_client
+GROUP BY lp.id_agreement, lp.id_client, cl.id_client
 
 OPTION (OPTIMIZE FOR (@id_client = 111), MAXDOP 1);
 
 --Время выполнения до оптимизации запроса:
 SQL Server parse and compile time: 
-   CPU time = 0 ms, elapsed time = 49 ms.
+   CPU time = 15 ms, elapsed time = 141 ms.
+
+ SQL Server Execution Times:
+   CPU time = 0 ms,  elapsed time = 0 ms.
 
 (затронута одна строка)
 Table 'loan_portfolio'. Scan count 1, logical reads 2, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
-Table 'client'. Scan count 0, logical reads 2, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+Table 'clients'. Scan count 0, logical reads 2, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
 
  SQL Server Execution Times:
    CPU time = 0 ms,  elapsed time = 0 ms.
@@ -48,14 +51,14 @@ Table 'client'. Scan count 0, logical reads 2, physical reads 0, page server rea
 --Время выполнения после оптимизации запроса:
 
 SQL Server parse and compile time: 
-   CPU time = 4 ms, elapsed time = 4 ms.
+   CPU time = 0 ms, elapsed time = 2 ms.
 
  SQL Server Execution Times:
    CPU time = 0 ms,  elapsed time = 0 ms.
 
 (затронута одна строка)
 Table 'loan_portfolio'. Scan count 1, logical reads 2, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
-Table 'client'. Scan count 0, logical reads 2, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+Table 'clients'. Scan count 0, logical reads 2, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
 
  SQL Server Execution Times:
    CPU time = 0 ms,  elapsed time = 0 ms.
