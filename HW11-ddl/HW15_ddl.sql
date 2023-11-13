@@ -1,14 +1,14 @@
-Начало проектной работы. 
-Создание таблиц и представлений для своего проекта.
+--Начало проектной работы. 
+--Создание таблиц и представлений для своего проекта.
 
-Нужно написать операторы DDL для создания БД вашего проекта:
-1. Создать базу данных.
-2. 3-4 основные таблицы для своего проекта. 
-3. Первичные и внешние ключи для всех созданных таблиц.
-4. 1-2 индекса на таблицы.
-5. Наложите по одному ограничению в каждой таблице на ввод данных.
+--Нужно написать операторы DDL для создания БД вашего проекта:
+--1. Создать базу данных.
+--2. 3-4 основные таблицы для своего проекта. 
+--3. Первичные и внешние ключи для всех созданных таблиц.
+--4. 1-2 индекса на таблицы.
+--5. Наложите по одному ограничению в каждой таблице на ввод данных.
 
-Обязательно (если еще нет) должно быть описание предметной области.
+--Обязательно (если еще нет) должно быть описание предметной области.
 
 --1.Cоздание базы данных
 CREATE DATABASE credit_portfolio;
@@ -17,6 +17,7 @@ GO
 --2 Cоздание таблиц+ 3.Присвоение ключей
 
 --Создание таблиц по менеджерам
+
 CREATE TABLE dbo.managers (
 manager_id int not null PRIMARY KEY,
 manager_name varchar (100) not null,
@@ -55,7 +56,6 @@ select * from dbo.products
 
 --Создание таблицы по клиентам
 
-
 CREATE TABLE dbo.clients (
 id_client int not null PRIMARY KEY,
 client_name varchar (100) not null,
@@ -93,6 +93,16 @@ id_agreement int not null PRIMARY KEY,
 id_client int not null,
 product_id int not null, 
 manager_id int not null)
+
+ALTER TABLE dbo.loan_agreements
+ADD FOREIGN KEY (id_client) REFERENCES dbo.clients (id_client)
+
+ALTER TABLE dbo.loan_agreements
+ADD FOREIGN KEY (product_id) REFERENCES dbo.products (product_id)
+
+ALTER TABLE dbo.loan_agreements
+ADD FOREIGN KEY (manager_id) REFERENCES dbo.managers (manager_id)
+
 
 INSERT INTO dbo.loan_agreements VALUES
 (245, 100,7565, 45),
@@ -135,6 +145,12 @@ overdue_debt decimal (19,2),
 overdue_interest decimal (19,2),
 accrued_reserves decimal (19,2),
 loan_status varchar (100) not null)
+
+ALTER TABLE dbo.loan_portfolio
+ADD FOREIGN KEY (id_client) REFERENCES dbo.loan_agreements (id_client);
+
+ALTER TABLE dbo.loan_portfolio
+ADD FOREIGN KEY (id_client) REFERENCES dbo.clients (id_client);
 
 INSERT INTO dbo.loan_portfolio VALUES
 (245,100,'2020-10-27','2040-10-27','2023-09-30',	'RUB',6.9,7500000.00,	7145131.00,	40521.70,0.00,0.00,	179641.32,'Open'),
@@ -200,17 +216,14 @@ accrued_reserves,
 loan_status)
 
 --5. Наложение по одному ограничению на ввод данных
+
 ALTER TABLE dbo.loan_portfolio
 ADD CONSTRAINT chack_date 
-CHECK (date_from <= date_to);
+CHECK (date_from <= date_to)
 
-GO
-CREATE FUNCTION get_date_birthd(@date_birth DATE)
-RETURNS VARCHAR (50)
-AS BEGIN 
-RETURN (SELECT date_birth FROM dbo.clients WHERE date_birth=@date_birth);
-END;
-
+ALTER TABLE dbo.clients
+ADD CONSTRAINT chack_datebirth 
+CHECK (date_birth > '1900-01-01')
 
 CREATE FUNCTION get_manager_id(@manager_id int)
 RETURNS VARCHAR (50)
@@ -221,10 +234,7 @@ END;
 ALTER TABLE dbo.managers
 ADD CONSTRAINT chack_manager_id
 CHECK (dbo.get_manager_id (manager_id) is not null)
-
 GO
-
-
 
 CREATE FUNCTION get_id_agreements(@id_agreement int)
 RETURNS VARCHAR (50)
@@ -234,8 +244,7 @@ END;
 
 ALTER TABLE dbo.loan_agreements
 ADD CONSTRAINT chack_id_agreement
-CHECK (dbo.get_id_agreement (id_agreement) is not null)
-
+CHECK (dbo.get_id_agreements (id_agreement) is not null)
 GO
 
 

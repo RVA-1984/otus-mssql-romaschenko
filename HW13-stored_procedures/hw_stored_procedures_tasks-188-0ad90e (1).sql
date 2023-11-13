@@ -26,17 +26,20 @@ USE WideWorldImporters
 
 USE WideWorldImporters;
 
-IF OBJECT_ID (N'Sales.CT', N'SCT') IS NOT NULL
-    DROP FUNCTION Sales.CT;
+IF OBJECT_ID ('Sales.CTR_Customer') IS NOT NULL
+    DROP FUNCTION [Sales].[Sales.CTR_Customer];
 GO
-CREATE FUNCTION Sales.CT (@CustomerID int)
+CREATE FUNCTION [Sales].[Sales.CTR_Customer] (@CustomerID int)
 RETURNS TABLE
 AS
 RETURN
 (
-    SELECT S.CustomerID, Max (S.TransactionAmount) AS 'Total'
+    SELECT top 1 S.CustomerID, S.TransactionAmount 
     FROM Sales.CustomerTransactions AS S
-	GROUP BY S.CustomerID);
+	ORDER BY S.CustomerID);
+	GO
+
+	select * from [Sales].[Sales.CTR_Customer] (0)
 
 /*
 2) Написать хранимую процедуру с входящим параметром СustomerID, выводящую сумму покупки по этому клиенту.
@@ -49,30 +52,23 @@ Sales.InvoiceLines: InvoiceID, LineProfit
 
 USE WideWorldImporters;
 
-IF OBJECT_ID ( 'Sales.Cstm', 'S' ) IS NOT NULL
-    DROP PROCEDURE Sales.Cstm;
+IF OBJECT_ID ('Sales.Cstms') IS NOT NULL
+    DROP PROCEDURE Sales.Cstms;
 GO
-CREATE PROCEDURE Sales.Cstm @SalesCustomer VARCHAR(40)
-    , @CustomerID MONEY
-    , @LineProfit MONEY OUTPUT
-	, @InvoiceID MONEY OUTPUT
-    
-AS
-    SET NOCOUNT ON;
-    SELECT SC.CustomerID AS CustomerID 
-    FROM Sales.Customers AS SC
-    JOIN Sales.Invoices AS SI
-      ON SC.CustomerID = SI.CustomerID
-    WHERE SI.CustomerID LIKE @CustomerID;
--- Populate the output variable @LineProfit.
-SET @LineProfit = (SELECT SUM(SIL.LineProfit)
-    FROM Sales.InvoiceLines AS SIL
-    JOIN Sales.Invoices AS SI
-      ON SIL.InvoiceID = SI.InvoiceID
-    WHERE SI.InvoiceID LIKE @InvoiceID AND SIL.LineProfit=@LineProfit);
--- Populate the output variable @CustomerID.
-SET @CustomerID = @LineProfit;
-GO
+CREATE PROCEDURE Sales.Cstms @CustomerID int
+  
+ AS
+    SET NOCOUNT ON;  
+	Select  sum(summ) as [Общая сумма покупок клиентов за все времена] from 
+									(select InvoiceID, sum(Quantity*UnitPrice) summ from Sales.InvoiceLines 
+									group by InvoiceID ) t1
+	join Sales.Invoices SI on SI.InvoiceID = t1.InvoiceID
+	join Sales.Customers SC on SC.CustomerID = SI.CustomerID
+	group by SC.CustomerID
+	having SC.CustomerID = @CustomerID;
+GO 
+
+EXEC Sales.Cstms 834;
 
 
 /*

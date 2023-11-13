@@ -12,7 +12,7 @@ CREATE PROCEDURE Amount_agreement
     
 AS
     SET NOCOUNT ON;
-    SELECT LP.id_agreement AS agreement, LP.id_client AS client, LP.client_name AS 'Name_client', amount_agreement AS 'amount_agreement'
+    SELECT LP.id_agreement AS agreement, LP.id_client AS client, amount_agreement AS 'amount_agreement'
     FROM dbo.loan_portfolio AS LP
     JOIN dbo.loan_agreements AS LA
       ON LA.id_agreement = LP.id_agreement
